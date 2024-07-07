@@ -1,0 +1,33 @@
+name: Deploy to Cloudflare Workers
+run-name: ${{ github.actor }} is attempting a deployment to Cloudflare
+
+on:
+    push:
+        branches:
+            - main
+
+jobs:
+    deploy:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Setup Node
+              uses: actions/setup-node@v4
+            
+            - name: Install pnpm
+              uses: pnpm/action-setup@v4
+
+            - name: Generate types & deploy
+              uses: cloudflare/wrangler-action@v3
+              with:
+                apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+                preCommands: pnpm run types
+                secrets: |
+                    DATABASE_URL
+              env:
+                DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+
