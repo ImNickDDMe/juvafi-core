@@ -1,4 +1,4 @@
-name: Deploy to Cloudflare Workers
+name: Deploy script to Cloudflare Workers
 run-name: ${{ github.actor }} is attempting a deployment to Cloudflare
 
 on:
