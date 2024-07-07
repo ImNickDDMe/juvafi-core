@@ -1,6 +1,7 @@
 import { InterfaceToType } from 'hono/utils/types';
 import { OpenAPIHono } from '@hono/zod-openapi';
 import { SwaggerUI } from '@hono/swagger-ui';
+import { usersRoute } from '$routes';
 
 const app = new OpenAPIHono<{ Bindings: InterfaceToType<Env> }>();
 
@@ -24,6 +25,8 @@ app.get('/docs', async (c) => {
 		</html>
 	`);
 });
+
+app.route('/users', usersRoute);
 
 app.doc('/swagger', {
 	openapi: '3.1.0',
