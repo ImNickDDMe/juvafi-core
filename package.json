@@ -7,7 +7,7 @@
     "dev": "wrangler dev",
     "start": "wrangler dev",
     "test": "vitest",
-    "cf-typegen": "wrangler types"
+    "types": "wrangler types"
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "^0.4.5",
@@ -15,5 +15,12 @@
     "typescript": "^5.4.5",
     "vitest": "1.5.0",
     "wrangler": "^3.60.3"
+  },
+  "dependencies": {
+    "@hono/swagger-ui": "^0.3.0",
+    "@hono/zod-openapi": "^0.14.8",
+    "@paralleldrive/cuid2": "^2.2.2",
+    "hono": "^4.4.12",
+    "zod": "^3.23.8"
   }
 }
