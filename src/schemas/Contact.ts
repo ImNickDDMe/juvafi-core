@@ -90,6 +90,7 @@ export default z
 			}),
         mobileNumber: z
             .string()
+			.max(13)
             .regex(/^[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,6}$/)
             .openapi({
                 param: {
@@ -101,6 +102,7 @@ export default z
         email: z
             .string()
             .email()
+			.max(169)
             .openapi({
                 param: {
                     name: 'email',
