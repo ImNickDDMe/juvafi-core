@@ -19,6 +19,8 @@ jobs:
             
             - name: Install pnpm
               uses: pnpm/action-setup@v4
+              with:
+                version: 8
 
             - name: Generate types & deploy
               uses: cloudflare/wrangler-action@v3
