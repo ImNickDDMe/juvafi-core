@@ -1,4 +1,4 @@
-import { OpenAPIHono, createRoute } from '@hono/zod-openapi';
+import { OpenAPIHono, createRoute, z } from '@hono/zod-openapi';
 import { ErrorSchema, generateID, initClient } from '$utils';
 import { InterfaceToType } from 'hono/utils/types';
 import { User } from '$schemas';
@@ -178,18 +178,20 @@ router.openapi(patchSchema, async (c) => {
 
     const database = initClient(c.env.DATABASE_URL);
 
-    const response = await database.transaction().execute(async (trx) => {
-        const updateResult = await trx.updateTable('users')
-            .set(data)
-            .where('id', '=', id).executeTakeFirst();
+    const response = await database
+        .transaction()
+        .execute(async (trx) => {
+            const updateResult = await trx.updateTable('users')
+                .set(data)
+                .where('id', '=', id).executeTakeFirst();
 
-        const selectResult = await trx.selectFrom('users')
-            .selectAll()
-            .where('id', '=', id)
-            .executeTakeFirst();
+            const selectResult = await trx.selectFrom('users')
+                .selectAll()
+                .where('id', '=', id)
+                .executeTakeFirst();
 
-        return { updateResult, selectResult };
-    });
+            return { updateResult, selectResult };
+        });
 
     if (parseInt(response.updateResult.numUpdatedRows.toString()) == 0)
         return c.json({ error: 'Unexpected error.' }, 500);
@@ -199,6 +201,62 @@ router.openapi(patchSchema, async (c) => {
 }, (result, c) => {
     if (!result.success)
         return c.json({ error: 'Insufficient or invalid data.' }, 400);
+});
+
+// DELETE Method
+const deleteSchema = createRoute({
+    method: 'delete',
+    path: '/{id}',
+    request: {
+        params: User.pick({
+            id: true
+        })
+    },
+    responses: {
+        200: {
+            description: 'Deletes the user successfully.',
+            content: {
+                'application/json': {
+                    schema: z.object({
+                        message: z.string()
+                    })
+                }
+            }
+        },
+        400: {
+            description: 'Throws an error due to insufficient parameters.',
+            content: {
+                'application/json': {
+                    schema: ErrorSchema
+                }
+            }
+        },
+        500: {
+            description: 'Throws an error due to unknown conditions.',
+            content: {
+                'application/json': {
+                    schema: ErrorSchema
+                }
+            }
+        }
+    }
+});
+
+router.openapi(deleteSchema, async (c) => {
+    const { id } = c.req.valid('param');
+
+    const database = initClient(c.env.DATABASE_URL);
+
+    const result = await database.deleteFrom('users')
+        .where('id', '=', id).executeTakeFirst();
+
+    if (parseInt(result.numDeletedRows?.toString()) == 0)
+        return c.json({ error: 'Unexpected error.' }, 500);
+
+    return c.json({ message: 'User deleted successfully.' }, 200);
+}, (result, c) => {
+    if (!result.success)
+        return c.json({ error: 'Insufficient parameters.' }, 400);
 });
 
 export default router;
