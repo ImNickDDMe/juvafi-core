@@ -1,4 +1,4 @@
-import { OpenAPIHono, createRoute } from '@hono/zod-openapi';
+import { OpenAPIHono, createRoute, z } from '@hono/zod-openapi';
 import { initClient, generateID, ErrorSchema } from '$utils';
 import { InterfaceToType } from 'hono/utils/types';
 import { Contact, User } from '$schemas';
@@ -80,43 +80,49 @@ const postSchema = createRoute({
 				},
 			},
 		},
-        400: {
-            description: 'Throws an error due to insufficient/invalid data.',
-            content: {
-                'application/json': {
-                    schema: ErrorSchema
-                }
-            }
-        },
-        500: {
-            description: 'Throws an error due to unknown conditions.',
-            content: {
-                'application/json': {
-                    schema: ErrorSchema
-                }
-            }
-        }
+		400: {
+			description: 'Throws an error due to insufficient/invalid data.',
+			content: {
+				'application/json': {
+					schema: ErrorSchema,
+				},
+			},
+		},
+		500: {
+			description: 'Throws an error due to unknown conditions.',
+			content: {
+				'application/json': {
+					schema: ErrorSchema,
+				},
+			},
+		},
 	},
 });
 
-router.openapi(postSchema, async (c) => {
-    const data = c.req.valid('json');
+router.openapi(
+	postSchema,
+	async (c) => {
+		const data = c.req.valid('json');
 
-    const database = initClient(c.env.DATABASE_URL);
+		const database = initClient(c.env.DATABASE_URL);
 
-    const result = await database.insertInto('contacts')
-        .values({
-            id: generateID('cnct'),
-            ...data
-        }).returning('id').executeTakeFirst();
+		const result = await database
+			.insertInto('contacts')
+			.values({
+				id: generateID('cnct'),
+				...data,
+			})
+			.returning('id')
+			.executeTakeFirst();
 
-    if (!result) return c.json({ error: 'Unexpected error.' }, 500);
+		if (!result) return c.json({ error: 'Unexpected error.' }, 500);
 
-    return c.json({ id: result.id }, 201);
-}, (result, c) => {
-    if (!result.success)
-        return c.json({ error: 'Insufficient or invalid data.' }, 400);
-});
+		return c.json({ id: result.id }, 201);
+	},
+	(result, c) => {
+		if (!result.success) return c.json({ error: 'Insufficient or invalid data.' }, 400);
+	}
+);
 
 // PATCH Method
 
@@ -128,66 +134,116 @@ const patchSchema = createRoute({
 		body: {
 			content: {
 				'application/json': {
-					schema: User.omit({ id: true }).partial()
-				}
-			}
-		}
+					schema: User.omit({ id: true }).partial(),
+				},
+			},
+		},
 	},
 	responses: {
 		200: {
 			description: 'Updates the contact data successfully.',
 			content: {
 				'application/json': {
-					schema: Contact
-				}
-			}
+					schema: Contact,
+				},
+			},
 		},
 		400: {
 			description: 'Throws an error due to insufficient parameters.',
 			content: {
 				'application/json': {
-					schema: ErrorSchema
-				}
-			}
+					schema: ErrorSchema,
+				},
+			},
 		},
 		500: {
 			description: 'Throws an error due to unknown conditions.',
 			content: {
 				'application/json': {
-					schema: ErrorSchema
-				}
-			}
-		}
-	}
+					schema: ErrorSchema,
+				},
+			},
+		},
+	},
 });
 
-router.openapi(patchSchema, async (c) => {
+router.openapi(
+	patchSchema,
+	async (c) => {
+		const { id } = c.req.valid('param');
+		const data = c.req.valid('json');
+
+		const database = initClient(c.env.DATABASE_URL);
+
+		const response = await database.transaction().execute(async (trx) => {
+			const updateResult = await trx.updateTable('contacts').set(data).where('id', '=', id).executeTakeFirst();
+
+			const selectResult = await trx.selectFrom('contacts').selectAll().where('id', '=', id).executeTakeFirst();
+
+			return { updateResult, selectResult };
+		});
+
+		if (parseInt(response.updateResult.numUpdatedRows.toString()) == 0) return c.json({ error: 'Unexpected error.' }, 500);
+
+		return c.json(response.selectResult, 200);
+	},
+	(result, c) => {
+		if (!result.success) return c.json({ error: 'Insufficient parameters.' }, 400);
+	}
+);
+
+// DELETE Method
+
+const deleteSchema = createRoute({
+	method: 'delete',
+	path: '/{id}',
+	request: {
+		params: Contact.pick({ id: true }),
+	},
+	responses: {
+		200: {
+			description: 'Deletes the contact successfully.',
+			content: {
+				'application/json': {
+					schema: z.object({ message: z.string() }),
+				},
+			},
+		},
+		400: {
+			description: 'Throws an error due to insufficient parameters.',
+			content: {
+				'application/json': {
+					schema: ErrorSchema,
+				},
+			},
+		},
+		500: {
+			description: 'Throws an error due to unknown conditions.',
+			content: {
+				'application/json': {
+					schema: ErrorSchema,
+				},
+			},
+		},
+	},
+});
+
+router.openapi(deleteSchema, async (c) => {
 	const { id } = c.req.valid('param');
-	const data = c.req.valid('json');
 
 	const database = initClient(c.env.DATABASE_URL);
 
-	const response = await database.transaction().execute(async (trx) => {
-		const updateResult = await trx.updateTable('contacts')
-			.set(data)
-			.where('id', '=', id)
-			.executeTakeFirst();
+	const result = await database.deleteFrom('contacts')
+		.where('id', '=', id)
+		.executeTakeFirst();
 
-		const selectResult = await trx.selectFrom('contacts')
-			.selectAll()
-			.where('id', '=', id)
-			.executeTakeFirst();
-		
-		return { updateResult, selectResult };
-	});
+	if (parseInt(result.numDeletedRows.toString()) == 0)
+		return c.json({ error: 'Unexpected error.' }, 500);
 
-	if (parseInt(response.updateResult.numUpdatedRows.toString()) == 0)
-        return c.json({ error: 'Unexpected error.' }, 500);
-
-	return c.json(response.selectResult, 200);
+	return c.json({ message: 'Contact deleted successfully.' }, 200);
 }, (result, c) => {
 	if (!result.success)
-		return c.json({ error: 'Insufficient parameters.' }, 400);
+		return c.json({ error: 'Invalid parameters.' }, 400);
 });
 
 export default router;
