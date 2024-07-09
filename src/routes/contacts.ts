@@ -1,7 +1,7 @@
 import { OpenAPIHono, createRoute } from '@hono/zod-openapi';
 import { initClient, generateID, ErrorSchema } from '$utils';
 import { InterfaceToType } from 'hono/utils/types';
-import { Contact } from '$schemas';
+import { Contact, User } from '$schemas';
 
 const router = new OpenAPIHono<{ Bindings: InterfaceToType<Env> }>();
 
@@ -116,6 +116,78 @@ router.openapi(postSchema, async (c) => {
 }, (result, c) => {
     if (!result.success)
         return c.json({ error: 'Insufficient or invalid data.' }, 400);
+});
+
+// PATCH Method
+
+const patchSchema = createRoute({
+	method: 'patch',
+	path: '/{id}',
+	request: {
+		params: Contact.pick({ id: true }),
+		body: {
+			content: {
+				'application/json': {
+					schema: User.omit({ id: true }).partial()
+				}
+			}
+		}
+	},
+	responses: {
+		200: {
+			description: 'Updates the contact data successfully.',
+			content: {
+				'application/json': {
+					schema: Contact
+				}
+			}
+		},
+		400: {
+			description: 'Throws an error due to insufficient parameters.',
+			content: {
+				'application/json': {
+					schema: ErrorSchema
+				}
+			}
+		},
+		500: {
+			description: 'Throws an error due to unknown conditions.',
+			content: {
+				'application/json': {
+					schema: ErrorSchema
+				}
+			}
+		}
+	}
+});
+
+router.openapi(patchSchema, async (c) => {
+	const { id } = c.req.valid('param');
+	const data = c.req.valid('json');
+
+	const database = initClient(c.env.DATABASE_URL);
+
+	const response = await database.transaction().execute(async (trx) => {
+		const updateResult = await trx.updateTable('contacts')
+			.set(data)
+			.where('id', '=', id)
+			.executeTakeFirst();
+
+		const selectResult = await trx.selectFrom('contacts')
+			.selectAll()
+			.where('id', '=', id)
+			.executeTakeFirst();
+		
+		return { updateResult, selectResult };
+	});
+
+	if (parseInt(response.updateResult.numUpdatedRows.toString()) == 0)
+        return c.json({ error: 'Unexpected error.' }, 500);
+
+	return c.json(response.selectResult, 200);
+}, (result, c) => {
+	if (!result.success)
+		return c.json({ error: 'Insufficient parameters.' }, 400);
 });
 
 export default router;
