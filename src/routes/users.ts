@@ -51,6 +51,7 @@ const getSchema = createRoute({
 // @ts-ignore
 router.openapi(
 	getSchema,
+	// @ts-ignore
 	async (c) => {
 		const { id } = c.req.valid('param');
 
@@ -182,6 +183,7 @@ const patchSchema = createRoute({
 
 router.openapi(
 	patchSchema,
+	// @ts-ignore
 	async (c) => {
 		const { id } = c.req.valid('param');
 		const data = c.req.valid('json');
@@ -247,6 +249,7 @@ const deleteSchema = createRoute({
 
 router.openapi(
 	deleteSchema,
+	// @ts-ignore
 	async (c) => {
 		const { id } = c.req.valid('param');
 

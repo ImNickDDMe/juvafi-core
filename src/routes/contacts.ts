@@ -1,5 +1,5 @@
 import { OpenAPIHono, createRoute, z } from '@hono/zod-openapi';
-import { initClient, generateID, ErrorSchema } from '$utils';
+import { initClient, generateID, ErrorSchema, handleValidationErrors } from '$utils';
 import { InterfaceToType } from 'hono/utils/types';
 import { Contact } from '$schemas';
 
@@ -43,6 +43,7 @@ const getSchema = createRoute({
 	},
 });
 
+// @ts-ignore
 router.openapi(getSchema, async (c) => {
 	const { id } = c.req.valid('param');
 
@@ -53,6 +54,9 @@ router.openapi(getSchema, async (c) => {
 	if (!result) return c.json({ error: 'Nonexistent contact' }, 404);
 
 	return c.json(result, 200);
+}, (result, c) => {
+	if (!result.success) 
+		return c.json(handleValidationErrors(result.error.errors), 400);
 });
 
 // POST Method
@@ -101,6 +105,7 @@ const postSchema = createRoute({
 
 router.openapi(
 	postSchema,
+	// @ts-ignore
 	async (c) => {
 		const data = c.req.valid('json');
 
@@ -120,7 +125,8 @@ router.openapi(
 		return c.json({ id: result.id }, 201);
 	},
 	(result, c) => {
-		if (!result.success) return c.json({ error: 'Insufficient or invalid data.' }, 400);
+		if (!result.success) 
+			return c.json(handleValidationErrors(result.error.errors), 400);
 	}
 );
 
@@ -169,6 +175,7 @@ const patchSchema = createRoute({
 
 router.openapi(
 	patchSchema,
+	// @ts-ignore
 	async (c) => {
 		const { id } = c.req.valid('param');
 		const data = c.req.valid('json');
@@ -188,7 +195,8 @@ router.openapi(
 		return c.json(response.selectResult, 200);
 	},
 	(result, c) => {
-		if (!result.success) return c.json({ error: 'Insufficient parameters.' }, 400);
+		if (!result.success) 
+			return c.json(handleValidationErrors(result.error.errors), 400);
 	}
 );
 
@@ -228,6 +236,7 @@ const deleteSchema = createRoute({
 	},
 });
 
+// @ts-ignore
 router.openapi(deleteSchema, async (c) => {
 	const { id } = c.req.valid('param');
 
@@ -242,8 +251,8 @@ router.openapi(deleteSchema, async (c) => {
 
 	return c.json({ message: 'Contact deleted successfully.' }, 200);
 }, (result, c) => {
-	if (!result.success)
-		return c.json({ error: 'Invalid parameters.' }, 400);
+	if (!result.success) 
+		return c.json(handleValidationErrors(result.error.errors), 400);
 });
 
 export default router;
