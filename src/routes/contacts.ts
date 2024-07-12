@@ -1,7 +1,7 @@
 import { OpenAPIHono, createRoute, z } from '@hono/zod-openapi';
 import { initClient, generateID, ErrorSchema } from '$utils';
 import { InterfaceToType } from 'hono/utils/types';
-import { Contact, User } from '$schemas';
+import { Contact } from '$schemas';
 
 const router = new OpenAPIHono<{ Bindings: InterfaceToType<Env> }>();
 
@@ -134,7 +134,7 @@ const patchSchema = createRoute({
 		body: {
 			content: {
 				'application/json': {
-					schema: User.omit({ id: true }).partial(),
+					schema: Contact.omit({ id: true }).partial(),
 				},
 			},
 		},
