@@ -1,5 +1,5 @@
 import { z } from '@hono/zod-openapi';
-import { validateID } from '$utils';
+import { generateID, validateID } from '$utils';
 
 export default z
 	.object({
@@ -15,7 +15,7 @@ export default z
 						param: {
 							name: 'id',
 							in: 'query',
-							example: 'usr_vik6ciepc2n9si6dg26d3kj5',
+							example: generateID('usr'),
 						},
 					}),
 				z
@@ -28,7 +28,7 @@ export default z
 						param: {
 							name: 'id',
 							in: 'path',
-							example: 'usr_wamg8oi4kku3krqcuz4dva9m',
+							example: generateID('usr'),
 						},
 					}),
 			]

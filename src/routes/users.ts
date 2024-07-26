@@ -12,6 +12,7 @@ import { User } from '$schemas';
 const router = new OpenAPIHono<{ Bindings: InterfaceToType<Env> }>();
 
 // GET Method
+
 const getSchema = createRoute({
 	method: 'get',
 	path: '/{id}',
@@ -70,6 +71,7 @@ router.openapi(
 );
 
 // POST Method
+
 const postSchema = createRoute({
 	method: 'post',
 	path: '/',
@@ -136,6 +138,7 @@ router.openapi(
 );
 
 // PATCH Method
+
 const patchSchema = createRoute({
 	method: 'patch',
 	path: '/{id}',
@@ -209,6 +212,7 @@ router.openapi(
 );
 
 // DELETE Method
+
 const deleteSchema = createRoute({
 	method: 'delete',
 	path: '/{id}',

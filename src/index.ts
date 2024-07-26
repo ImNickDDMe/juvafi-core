@@ -1,4 +1,4 @@
-import { contactsRoute, usersRoute } from '$routes';
+import { contactsRoute, ledgersRoute, usersRoute } from '$routes';
 import { InterfaceToType } from 'hono/utils/types';
 import { OpenAPIHono } from '@hono/zod-openapi';
 import { SwaggerUI } from '@hono/swagger-ui';
@@ -6,7 +6,7 @@ import { SwaggerUI } from '@hono/swagger-ui';
 const app = new OpenAPIHono<{ Bindings: InterfaceToType<Env> }>();
 
 app.get('/', async (c) => {
-	return c.json('JuvaFi Core');
+	return c.text('JuvaFi Core');
 });
 
 app.get('/docs', async (c) => {
@@ -19,7 +19,6 @@ app.get('/docs', async (c) => {
         		<title>JuvaFi Core - SwaggerUI</title>
 			</head>
 			<body>
-				<img src="https://i.ibb.co/JKVgH7h/logo.png" height="25%" />
 				${SwaggerUI({ url: '/swagger' })}
 			</body>
 		</html>
@@ -29,6 +28,8 @@ app.get('/docs', async (c) => {
 app.route('/users', usersRoute);
 
 app.route('/contacts', contactsRoute);
+
+app.route('/ledgers', ledgersRoute);
 
 app.doc('/swagger', {
 	openapi: '3.1.0',

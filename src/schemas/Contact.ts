@@ -43,7 +43,7 @@ export default z
 				param: {
 					name: 'userId',
 					in: 'query',
-					example: generateID('usr'),
+					example: generateID('cnct'),
 				},
 			}),
 		mainStreet: z
